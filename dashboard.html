@@ -1,0 +1,168 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VibeCore Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: system-ui, sans-serif; background: #0f0f0f; color: #fff; min-height: 100vh; }
+  header { padding: 24px 32px; border-bottom: 1px solid #222; display: flex; align-items: center; gap: 12px; }
+  header h1 { font-size: 20px; font-weight: 600; }
+  header span { font-size: 12px; background: #00ff8822; color: #00ff88; padding: 3px 10px; border-radius: 20px; }
+  .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; padding: 24px 32px; }
+  .card { background: #1a1a1a; border: 1px solid #222; border-radius: 12px; padding: 20px; }
+  .card .label { font-size: 12px; color: #888; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .card .value { font-size: 32px; font-weight: 700; }
+  .card .sub { font-size: 12px; color: #555; margin-top: 4px; }
+  .green { color: #00ff88; }
+  .blue { color: #4fa3ff; }
+  .purple { color: #b57aff; }
+  .orange { color: #ffaa44; }
+  .charts { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding: 0 32px 24px; }
+  .chart-card { background: #1a1a1a; border: 1px solid #222; border-radius: 12px; padding: 20px; }
+  .chart-card h3 { font-size: 14px; color: #888; margin-bottom: 16px; }
+  .log { margin: 0 32px 32px; background: #1a1a1a; border: 1px solid #222; border-radius: 12px; padding: 20px; }
+  .log h3 { font-size: 14px; color: #888; margin-bottom: 16px; }
+  .log-entry { display: flex; gap: 12px; padding: 8px 0; border-bottom: 1px solid #222; font-size: 13px; align-items: center; }
+  .log-entry:last-child { border-bottom: none; }
+  .badge { padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+  .badge.ollama { background: #4fa3ff22; color: #4fa3ff; }
+  .badge.exact_cache { background: #00ff8822; color: #00ff88; }
+  .badge.semantic_cache { background: #b57aff22; color: #b57aff; }
+  .badge.external_api { background: #ffaa4422; color: #ffaa44; }
+  .prompt-text { flex: 1; color: #ccc; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .saved-text { color: #00ff88; white-space: nowrap; }
+  .time-text { color: #555; white-space: nowrap; }
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #00ff88; animation: pulse 2s infinite; flex-shrink: 0; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="status-dot"></div>
+  <h1>VibeCore</h1>
+  <span>LIVE</span>
+</header>
+
+<div class="grid">
+  <div class="card">
+    <div class="label">Total Saved</div>
+    <div class="value green" id="total-saved">Rs.0</div>
+    <div class="sub">vs GPT-4 pricing</div>
+  </div>
+  <div class="card">
+    <div class="label">Cache Hit Rate</div>
+    <div class="value blue" id="hit-rate">0%</div>
+    <div class="sub">exact + semantic</div>
+  </div>
+  <div class="card">
+    <div class="label">Total Requests</div>
+    <div class="value purple" id="total-requests">0</div>
+    <div class="sub">since server start</div>
+  </div>
+  <div class="card">
+    <div class="label">Avg Response Time</div>
+    <div class="value orange" id="avg-time">0ms</div>
+    <div class="sub">across all requests</div>
+  </div>
+</div>
+
+<div class="charts">
+  <div class="chart-card">
+    <h3>REQUEST SOURCES</h3>
+    <canvas id="sourceChart" height="200"></canvas>
+  </div>
+  <div class="chart-card">
+    <h3>SAVINGS OVER TIME (Rs.)</h3>
+    <canvas id="savingsChart" height="200"></canvas>
+  </div>
+</div>
+
+<div class="log">
+  <h3>LIVE REQUEST LOG</h3>
+  <div id="log-entries">
+    <div style="color:#555;font-size:13px">Waiting for requests...</div>
+  </div>
+</div>
+
+<script>
+const sourceChart = new Chart(document.getElementById('sourceChart'), {
+  type: 'doughnut',
+  data: {
+    labels: ['Ollama', 'Exact Cache', 'Semantic Cache', 'External API'],
+    datasets: [{ data: [0,0,0,0], backgroundColor: ['#4fa3ff','#00ff88','#b57aff','#ffaa44'], borderWidth: 0 }]
+  },
+  options: { plugins: { legend: { labels: { color: '#888', font: { size: 12 } } } } }
+});
+
+const savingsChart = new Chart(document.getElementById('savingsChart'), {
+  type: 'line',
+  data: {
+    labels: [],
+    datasets: [{ label: 'Saved (Rs.)', data: [], borderColor: '#00ff88', backgroundColor: '#00ff8811', fill: true, tension: 0.4, pointRadius: 3 }]
+  },
+  options: {
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { ticks: { color: '#555' }, grid: { color: '#222' } },
+      y: { ticks: { color: '#555' }, grid: { color: '#222' } }
+    }
+  }
+});
+
+let requestCount = 0;
+let totalTime = 0;
+
+async function fetchStats() {
+  try {
+    const res = await fetch('http://localhost:8000/stats');
+    const data = await res.json();
+
+    document.getElementById('total-saved').textContent = 'Rs.' + data.total_saved.toFixed(4);
+    document.getElementById('total-requests').textContent = data.total_requests;
+    document.getElementById('hit-rate').textContent = data.hit_rate + '%';
+    document.getElementById('avg-time').textContent = data.avg_response_ms + 'ms';
+
+    sourceChart.data.datasets[0].data = [
+      data.sources.ollama || 0,
+      data.sources.exact_cache || 0,
+      data.sources.semantic_cache || 0,
+      data.sources.external_api || 0
+    ];
+    sourceChart.update();
+
+    if (data.recent_requests && data.recent_requests.length > 0) {
+      const latest = data.recent_requests[data.recent_requests.length - 1];
+      savingsChart.data.labels.push(new Date().toLocaleTimeString());
+      savingsChart.data.datasets[0].data.push(data.total_saved);
+      if (savingsChart.data.labels.length > 20) {
+        savingsChart.data.labels.shift();
+        savingsChart.data.datasets[0].data.shift();
+      }
+      savingsChart.update();
+
+      const logDiv = document.getElementById('log-entries');
+      if (logDiv.children[0] && logDiv.children[0].style.color === 'rgb(85, 85, 85)') logDiv.innerHTML = '';
+
+      const entry = document.createElement('div');
+      entry.className = 'log-entry';
+      entry.innerHTML = 
+        <span class="badge "></span>
+        <span class="prompt-text"></span>
+        <span class="saved-text">+Rs.</span>
+        <span class="time-text">ms</span>
+      ;
+      logDiv.insertBefore(entry, logDiv.firstChild);
+      if (logDiv.children.length > 20) logDiv.removeChild(logDiv.lastChild);
+    }
+  } catch(e) {}
+}
+
+setInterval(fetchStats, 1000);
+fetchStats();
+</script>
+</body>
+</html>
