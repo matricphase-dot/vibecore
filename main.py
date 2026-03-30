@@ -1,19 +1,24 @@
-﻿from fastapi import FastAPI
+﻿import os
+import startup
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from datetime import datetime
 from sentence_transformers import SentenceTransformer
 from optimizer import optimize_prompt
-from ollama_client import generate_local
 from classifier import classify_prompt
 from cost_tracker import calculate_cost
-import hashlib, redis, numpy as np, time
+import hashlib, redis, numpy as np, time, requests as req
+
+REDIS_URL = os.getenv('REDIS_URL', 'redis://localhost:6379')
+GROQ_API_KEY = os.getenv('GROQ_API_KEY', '')
+PORT = int(os.getenv('PORT', 8000))
 
 app = FastAPI()
 app.add_middleware(CORSMiddleware, allow_origins=['*'], allow_methods=['*'], allow_headers=['*'])
 
-cache = redis.Redis(host='localhost', port=6379, decode_responses=True)
+cache = redis.from_url(REDIS_URL, decode_responses=True)
 model = SentenceTransformer('all-MiniLM-L6-v2')
 
 semantic_store = []
@@ -44,6 +49,18 @@ def find_semantic_match(embedding, threshold=0.90):
         print(f'[Semantic Cache] HIT with score {best_score:.4f}')
         return best_response
     return None
+
+def generate_groq(prompt: str) -> str:
+    if not GROQ_API_KEY:
+        return f'Echo: {prompt}'
+    try:
+        res = req.post('https://api.groq.com/openai/v1/chat/completions',
+            headers={'Authorization': f'Bearer {GROQ_API_KEY}', 'Content-Type': 'application/json'},
+            json={'model': 'llama3-8b-8192', 'messages': [{'role': 'user', 'content': prompt}], 'max_tokens': 500})
+        return res.json()['choices'][0]['message']['content'].strip()
+    except Exception as e:
+        print(f'[Groq] Error: {e}')
+        return f'Echo: {prompt}'
 
 @app.get('/')
 async def dashboard():
@@ -101,17 +118,9 @@ async def generate(request: PromptRequest):
         return {'response': semantic, 'cached': True, 'source': 'semantic_cache', 'complexity': 'n/a', 'tokens': cost['tokens'], 'cost_original': cost['cost_original'], 'cost_optimized': cost['cost_optimized'], 'saved': cost['saved'], 'total_saved': round(total_saved, 4)}
 
     complexity = classify_prompt(prompt)
-
-    if complexity == 'simple':
-        print('[Decision] Routing to Ollama')
-        response_text = generate_local(prompt)
-        if not response_text:
-            response_text = f'Echo: {prompt}'
-        source = 'ollama'
-    else:
-        print('[Decision] Complex - external API route')
-        response_text = f'[Complex] Echo: {prompt}'
-        source = 'external_api'
+    print(f'[Decision] Complexity: {complexity}')
+    response_text = generate_groq(prompt)
+    source = 'ollama' if complexity == 'simple' else 'external_api'
 
     cache.setex(key, 3600, response_text)
     semantic_store.append({'embedding': embedding, 'response': response_text})
