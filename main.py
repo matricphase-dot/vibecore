@@ -5,28 +5,33 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from datetime import datetime
-from sentence_transformers import SentenceTransformer
-from optimizer import optimize_prompt
-from classifier import classify_prompt
-from cost_tracker import calculate_cost
-import hashlib, redis, numpy as np, time, requests as req
+from contextlib import asynccontextmanager
+import hashlib, numpy as np, time, requests as req, redis, threading
 
 REDIS_URL = os.getenv('REDIS_URL', 'redis://localhost:6379')
 GROQ_API_KEY = os.getenv('GROQ_API_KEY', '')
-PORT = int(os.getenv('PORT', 8000))
 
 app = FastAPI()
 app.add_middleware(CORSMiddleware, allow_origins=['*'], allow_methods=['*'], allow_headers=['*'])
 
 cache = redis.from_url(REDIS_URL, decode_responses=True)
-model = SentenceTransformer('all-MiniLM-L6-v2')
 
+model = None
 semantic_store = []
 total_saved = 0.0
 total_requests = 0
 total_response_ms = 0
 sources = {'ollama': 0, 'exact_cache': 0, 'semantic_cache': 0, 'external_api': 0}
 recent_requests = []
+
+def load_model():
+    global model
+    print('[Model] Loading sentence transformer...')
+    from sentence_transformers import SentenceTransformer
+    model = SentenceTransformer('all-MiniLM-L6-v2')
+    print('[Model] Ready!')
+
+threading.Thread(target=load_model, daemon=True).start()
 
 class PromptRequest(BaseModel):
     prompt: str
@@ -66,6 +71,10 @@ def generate_groq(prompt: str) -> str:
 async def dashboard():
     return FileResponse('dashboard.html')
 
+@app.get('/health')
+async def health():
+    return {'status': 'ok', 'model_ready': model is not None}
+
 @app.get('/stats')
 async def stats():
     hit_rate = 0
@@ -89,13 +98,16 @@ async def generate(request: PromptRequest):
     start = time.time()
     print(f'\n[{datetime.now()}] Received: {request.prompt[:60]}')
 
+    from optimizer import optimize_prompt
+    from classifier import classify_prompt
+    from cost_tracker import calculate_cost
+
     optimized = optimize_prompt(request.prompt)
     prompt = optimized['optimized']
 
     key = hash_prompt(prompt)
     exact = cache.get(key)
     if exact:
-        print('[Exact Cache] HIT')
         cost = calculate_cost(prompt, 'exact_cache')
         total_saved += cost['saved']
         total_requests += 1
@@ -104,6 +116,9 @@ async def generate(request: PromptRequest):
         sources['exact_cache'] += 1
         recent_requests.append({'prompt': prompt[:50], 'source': 'exact_cache', 'saved': cost['saved'], 'response_ms': ms})
         return {'response': exact, 'cached': True, 'source': 'exact_cache', 'complexity': 'n/a', 'tokens': cost['tokens'], 'cost_original': cost['cost_original'], 'cost_optimized': cost['cost_optimized'], 'saved': cost['saved'], 'total_saved': round(total_saved, 4)}
+
+    if model is None:
+        return {'response': 'Model loading, please try again in 30 seconds', 'cached': False, 'source': 'loading', 'complexity': 'n/a', 'tokens': 0, 'cost_original': 0, 'cost_optimized': 0, 'saved': 0, 'total_saved': 0}
 
     embedding = model.encode(prompt).tolist()
     semantic = find_semantic_match(embedding)
@@ -118,7 +133,6 @@ async def generate(request: PromptRequest):
         return {'response': semantic, 'cached': True, 'source': 'semantic_cache', 'complexity': 'n/a', 'tokens': cost['tokens'], 'cost_original': cost['cost_original'], 'cost_optimized': cost['cost_optimized'], 'saved': cost['saved'], 'total_saved': round(total_saved, 4)}
 
     complexity = classify_prompt(prompt)
-    print(f'[Decision] Complexity: {complexity}')
     response_text = generate_groq(prompt)
     source = 'ollama' if complexity == 'simple' else 'external_api'
 
