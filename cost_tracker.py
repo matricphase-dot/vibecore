@@ -1,4 +1,5 @@
 ﻿GPT_COST_PER_TOKEN = 0.002
+GROQ_COST_PER_TOKEN = 0.0
 LOCAL_COST_PER_TOKEN = 0.0
 
 def estimate_tokens(text: str) -> int:
@@ -8,9 +9,7 @@ def calculate_cost(prompt: str, source: str) -> dict:
     tokens = estimate_tokens(prompt)
     original_cost = round(tokens * GPT_COST_PER_TOKEN, 4)
 
-    if source in ['exact_cache', 'semantic_cache']:
-        optimized_cost = 0.0
-    elif source == 'ollama':
+    if source in ['exact_cache', 'semantic_cache', 'ollama', 'groq']:
         optimized_cost = 0.0
     else:
         optimized_cost = original_cost
