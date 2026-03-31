@@ -1,0 +1,176 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VibeCore — AI Cost Autopilot</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family: system-ui, sans-serif; background:#0f0f0f; color:#fff; }
+nav { padding:20px 40px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #222; }
+nav h1 { font-size:20px; font-weight:700; }
+nav span { font-size:12px; background:#00ff8822; color:#00ff88; padding:4px 12px; border-radius:20px; }
+.hero { text-align:center; padding:80px 20px 60px; }
+.hero h2 { font-size:48px; font-weight:800; line-height:1.2; margin-bottom:20px; }
+.hero h2 span { color:#00ff88; }
+.hero p { font-size:18px; color:#888; max-width:600px; margin:0 auto 40px; }
+.signup-box { background:#1a1a1a; border:1px solid #333; border-radius:16px; padding:32px; max-width:480px; margin:0 auto; }
+.signup-box h3 { font-size:20px; margin-bottom:8px; }
+.signup-box p { color:#888; font-size:14px; margin-bottom:24px; }
+.input-row { display:flex; gap:8px; }
+input[type=email] { flex:1; padding:12px 16px; background:#111; border:1px solid #333; border-radius:8px; color:#fff; font-size:14px; outline:none; }
+input[type=email]:focus { border-color:#00ff88; }
+button { padding:12px 24px; background:#00ff88; color:#000; border:none; border-radius:8px; font-weight:700; cursor:pointer; font-size:14px; white-space:nowrap; }
+button:hover { background:#00dd77; }
+.result { margin-top:20px; background:#111; border:1px solid #222; border-radius:8px; padding:16px; display:none; }
+.result .key { font-family:monospace; color:#00ff88; font-size:13px; word-break:break-all; }
+.result p { color:#888; font-size:12px; margin-top:8px; }
+.features { display:grid; grid-template-columns:repeat(3,1fr); gap:20px; padding:60px 40px; max-width:1000px; margin:0 auto; }
+.feature { background:#1a1a1a; border:1px solid #222; border-radius:12px; padding:24px; }
+.feature .icon { font-size:24px; margin-bottom:12px; }
+.feature h4 { font-size:16px; margin-bottom:8px; }
+.feature p { font-size:13px; color:#888; line-height:1.6; }
+.code-section { padding:40px; max-width:800px; margin:0 auto; }
+.code-section h3 { font-size:24px; margin-bottom:24px; text-align:center; }
+.tabs { display:flex; gap:8px; margin-bottom:16px; }
+.tab { padding:8px 16px; border-radius:6px; cursor:pointer; font-size:13px; background:#1a1a1a; border:1px solid #333; color:#888; }
+.tab.active { background:#00ff8822; border-color:#00ff88; color:#00ff88; }
+.code-block { background:#111; border:1px solid #222; border-radius:12px; padding:24px; font-family:monospace; font-size:13px; line-height:1.8; overflow-x:auto; }
+.code-block .comment { color:#555; }
+.code-block .string { color:#00ff88; }
+.code-block .keyword { color:#4fa3ff; }
+.install-section { text-align:center; padding:60px 20px; background:#111; margin-top:40px; }
+.install-section h3 { font-size:28px; margin-bottom:16px; }
+.install-cmd { display:inline-block; background:#1a1a1a; border:1px solid #333; border-radius:8px; padding:16px 32px; font-family:monospace; font-size:16px; color:#00ff88; margin:16px 0; }
+footer { text-align:center; padding:20px; color:#555; font-size:13px; border-top:1px solid #222; }
+</style>
+</head>
+<body>
+
+<nav>
+  <h1>⚡ VibeCore</h1>
+  <span>LIVE BETA</span>
+</nav>
+
+<div class="hero">
+  <h2>Cut your AI API costs<br><span>by up to 80%</span></h2>
+  <p>VibeCore sits between your app and GPT/Claude. It caches, optimizes and routes your prompts automatically.</p>
+
+  <div class="signup-box">
+    <h3>Get your free API key</h3>
+    <p>1000 requests free. No credit card needed.</p>
+    <div class="input-row">
+      <input type="email" id="email" placeholder="you@example.com">
+      <button onclick="signup()">Get Key →</button>
+    </div>
+    <div class="result" id="result">
+      <div class="key" id="api-key"></div>
+      <p>Copy this key — you'll need it to use VibeCore</p>
+      <p style="margin-top:12px;color:#00ff88">✅ Your account is ready! See setup instructions below.</p>
+    </div>
+  </div>
+</div>
+
+<div class="features">
+  <div class="feature">
+    <div class="icon">⚡</div>
+    <h4>Exact Cache</h4>
+    <p>Repeated prompts return instantly from Redis cache. Zero cost, zero latency.</p>
+  </div>
+  <div class="feature">
+    <div class="icon">🧠</div>
+    <h4>Smart Routing</h4>
+    <p>Simple prompts go to free models. Complex ones go to powerful APIs. Automatically.</p>
+  </div>
+  <div class="feature">
+    <div class="icon">📊</div>
+    <h4>Cost Tracking</h4>
+    <p>Every response shows exactly how much you saved vs GPT-4 pricing.</p>
+  </div>
+</div>
+
+<div class="code-section">
+  <h3>Integrate in 2 minutes</h3>
+  <div class="tabs">
+    <div class="tab active" onclick="showTab('js')">JavaScript</div>
+    <div class="tab" onclick="showTab('python')">Python</div>
+    <div class="tab" onclick="showTab('curl')">cURL</div>
+  </div>
+
+  <div class="code-block" id="tab-js">
+<span class="comment">// Install</span>
+npm install axios
+
+<span class="comment">// Use VibeCore instead of OpenAI</span>
+<span class="keyword">const</span> axios = require(<span class="string">'axios'</span>)
+
+<span class="keyword">const</span> res = <span class="keyword">await</span> axios.post(<span class="string">'https://vibecore-07n6.onrender.com/generate'</span>, {
+  prompt: <span class="string">'What is the capital of France?'</span>
+}, {
+  headers: { <span class="string">'x-api-key'</span>: <span class="string">'YOUR_API_KEY'</span> }
+})
+
+console.log(res.data.response)  <span class="comment">// Paris</span>
+console.log(<span class="string">'Saved: Rs.'</span> + res.data.saved)
+  </div>
+
+  <div class="code-block" id="tab-python" style="display:none">
+<span class="comment"># Use VibeCore instead of OpenAI</span>
+<span class="keyword">import</span> requests
+
+res = requests.post(<span class="string">'https://vibecore-07n6.onrender.com/generate'</span>,
+    json={<span class="string">'prompt'</span>: <span class="string">'What is the capital of France?'</span>},
+    headers={<span class="string">'x-api-key'</span>: <span class="string">'YOUR_API_KEY'</span>}
+)
+
+print(res.json()[<span class="string">'response'</span>])   <span class="comment"># Paris</span>
+print(<span class="string">'Saved:'</span>, res.json()[<span class="string">'saved'</span>])
+  </div>
+
+  <div class="code-block" id="tab-curl" style="display:none">
+<span class="comment"># Test with cURL</span>
+curl -X POST https://vibecore-07n6.onrender.com/generate \
+  -H <span class="string">"Content-Type: application/json"</span> \
+  -H <span class="string">"x-api-key: YOUR_API_KEY"</span> \
+  -d <span class="string">'{"prompt": "What is the capital of France?"}'</span>
+  </div>
+</div>
+
+<div class="install-section">
+  <h3>One command setup</h3>
+  <p style="color:#888;margin-bottom:8px">Install the VibeCore CLI and get started instantly</p>
+  <div class="install-cmd">npx vibecore-cli init</div>
+  <p style="color:#555;font-size:13px;margin-top:16px">Works with Node.js 16+</p>
+</div>
+
+<footer>
+  VibeCore — AI Cost Autopilot · Built with ❤️ · <a href="/dashboard" style="color:#00ff88">Dashboard</a>
+</footer>
+
+<script>
+async function signup() {
+  const email = document.getElementById('email').value
+  if (!email) return alert('Enter your email!')
+  try {
+    const res = await fetch('/signup', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({email})
+    })
+    const data = await res.json()
+    document.getElementById('api-key').textContent = data.api_key
+    document.getElementById('result').style.display = 'block'
+  } catch(e) {
+    alert('Error! Try again.')
+  }
+}
+
+function showTab(tab) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'))
+  document.querySelectorAll('[id^=tab-]').forEach(t => t.style.display = 'none')
+  document.getElementById('tab-' + tab).style.display = 'block'
+  event.target.classList.add('active')
+}
+</script>
+</body>
+</html>

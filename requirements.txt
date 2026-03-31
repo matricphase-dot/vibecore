@@ -5,3 +5,6 @@ sentence-transformers
 numpy
 nltk
 requests
+python-jose
+passlib
+python-multipart

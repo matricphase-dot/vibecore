@@ -1,61 +1,34 @@
-﻿import os
+import os
 import startup
-from fastapi import FastAPI
+from fastapi import FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, HTMLResponse
 from pydantic import BaseModel
 from datetime import datetime
 import hashlib, numpy as np, time, requests as req, redis
+from auth import create_user, get_user, update_user_stats
 
 REDIS_URL = os.getenv('REDIS_URL', 'redis://localhost:6379')
 GROQ_API_KEY = os.getenv('GROQ_API_KEY', '')
-USE_SEMANTIC = os.getenv('USE_SEMANTIC', 'false').lower() == 'true'
 
 app = FastAPI()
 app.add_middleware(CORSMiddleware, allow_origins=['*'], allow_methods=['*'], allow_headers=['*'])
-
 cache = redis.from_url(REDIS_URL, decode_responses=True)
 
-semantic_store = []
-model = None
 total_saved = 0.0
 total_requests = 0
 total_response_ms = 0
 sources = {'groq': 0, 'exact_cache': 0, 'semantic_cache': 0, 'external_api': 0}
 recent_requests = []
 
-if USE_SEMANTIC:
-    import threading
-    def load_model():
-        global model
-        print('[Model] Loading sentence transformer...')
-        from sentence_transformers import SentenceTransformer
-        model = SentenceTransformer('all-MiniLM-L6-v2')
-        print('[Model] Ready!')
-    threading.Thread(target=load_model, daemon=True).start()
-else:
-    print('[Model] Semantic cache disabled - using exact cache + Groq only')
-
 class PromptRequest(BaseModel):
     prompt: str
 
-def hash_prompt(prompt: str) -> str:
-    return hashlib.sha256(prompt.strip().lower().encode()).hexdigest()
+class SignupRequest(BaseModel):
+    email: str
 
-def cosine_similarity(a, b):
-    return np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
-
-def find_semantic_match(embedding, threshold=0.90):
-    best_score = 0
-    best_response = None
-    for entry in semantic_store:
-        score = cosine_similarity(embedding, entry['embedding'])
-        if score >= threshold and score > best_score:
-            best_score = score
-            best_response = entry['response']
-    if best_response:
-        return best_response
-    return None
+def hash_prompt(prompt: str, api_key: str) -> str:
+    return hashlib.sha256(f'{api_key}:{prompt.strip().lower()}'.encode()).hexdigest()
 
 def generate_groq(prompt: str) -> str:
     if not GROQ_API_KEY:
@@ -71,14 +44,53 @@ def generate_groq(prompt: str) -> str:
 
 @app.get('/')
 async def dashboard():
-    return FileResponse('dashboard.html')
+    return FileResponse('index.html')
 
+
+@app.get('/dashboard')
+async def dash():
+    return FileResponse('dashboard.html')
 @app.get('/health')
 async def health():
-    return {'status': 'ok', 'model_ready': True, 'semantic_enabled': USE_SEMANTIC}
+    return {'status': 'ok', 'model_ready': True}
+
+@app.post('/signup')
+async def signup(request: SignupRequest):
+    user = create_user(request.email)
+    return {
+        'message': 'Welcome to VibeCore!',
+        'email': user['email'],
+        'api_key': user['api_key'],
+        'plan': user['plan'],
+        'limit': user['limit']
+    }
+
+@app.get('/me')
+async def me(x_api_key: str = Header(...)):
+    user = get_user(x_api_key)
+    if not user:
+        raise HTTPException(status_code=401, detail='Invalid API key')
+    return {
+        'email': user['email'],
+        'api_key': user['api_key'],
+        'plan': user['plan'],
+        'total_requests': user['total_requests'],
+        'total_saved': user['total_saved'],
+        'limit': user['limit'],
+        'requests_remaining': user['limit'] - user['total_requests']
+    }
 
 @app.get('/stats')
-async def stats():
+async def stats(x_api_key: str = Header(None)):
+    if x_api_key:
+        user = get_user(x_api_key)
+        if user:
+            return {
+                'total_saved': user['total_saved'],
+                'total_requests': user['total_requests'],
+                'requests_remaining': user['limit'] - user['total_requests'],
+                'plan': user['plan']
+            }
     hit_rate = 0
     if total_requests > 0:
         hits = sources.get('exact_cache', 0) + sources.get('semantic_cache', 0)
@@ -95,10 +107,18 @@ async def stats():
     }
 
 @app.post('/generate')
-async def generate(request: PromptRequest):
+async def generate(request: PromptRequest, x_api_key: str = Header(...)):
     global total_saved, total_requests, total_response_ms
     start = time.time()
-    print(f'\n[{datetime.now()}] Received: {request.prompt[:60]}')
+
+    user = get_user(x_api_key)
+    if not user:
+        raise HTTPException(status_code=401, detail='Invalid API key. Get one at https://vibecore-07n6.onrender.com')
+
+    if user['total_requests'] >= user['limit']:
+        raise HTTPException(status_code=429, detail=f'Free limit of {user["limit"]} requests reached. Upgrade at vibecore-07n6.onrender.com')
+
+    print(f'\n[{datetime.now()}] User: {user["email"]} | Prompt: {request.prompt[:40]}')
 
     from optimizer import optimize_prompt
     from classifier import classify_prompt
@@ -106,8 +126,8 @@ async def generate(request: PromptRequest):
 
     optimized = optimize_prompt(request.prompt)
     prompt = optimized['optimized']
+    key = hash_prompt(prompt, x_api_key)
 
-    key = hash_prompt(prompt)
     exact = cache.get(key)
     if exact:
         cost = calculate_cost(prompt, 'exact_cache')
@@ -117,25 +137,12 @@ async def generate(request: PromptRequest):
         total_response_ms += ms
         sources['exact_cache'] += 1
         recent_requests.append({'prompt': prompt[:50], 'source': 'exact_cache', 'saved': cost['saved'], 'response_ms': ms})
-        return {'response': exact, 'cached': True, 'source': 'exact_cache', 'complexity': 'n/a', 'tokens': cost['tokens'], 'cost_original': cost['cost_original'], 'cost_optimized': cost['cost_optimized'], 'saved': cost['saved'], 'total_saved': round(total_saved, 4)}
-
-    if USE_SEMANTIC and model is not None:
-        embedding = model.encode(prompt).tolist()
-        semantic = find_semantic_match(embedding)
-        if semantic:
-            cost = calculate_cost(prompt, 'semantic_cache')
-            total_saved += cost['saved']
-            total_requests += 1
-            ms = round((time.time() - start) * 1000)
-            total_response_ms += ms
-            sources['semantic_cache'] += 1
-            recent_requests.append({'prompt': prompt[:50], 'source': 'semantic_cache', 'saved': cost['saved'], 'response_ms': ms})
-            return {'response': semantic, 'cached': True, 'source': 'semantic_cache', 'complexity': 'n/a', 'tokens': cost['tokens'], 'cost_original': cost['cost_original'], 'cost_optimized': cost['cost_optimized'], 'saved': cost['saved'], 'total_saved': round(total_saved, 4)}
-        semantic_store.append({'embedding': embedding, 'response': ''})
+        update_user_stats(x_api_key, cost['saved'])
+        return {'response': exact, 'cached': True, 'source': 'exact_cache', 'tokens': cost['tokens'], 'cost_original': cost['cost_original'], 'cost_optimized': cost['cost_optimized'], 'saved': cost['saved'], 'total_saved': round(total_saved, 4)}
 
     complexity = classify_prompt(prompt)
     response_text = generate_groq(prompt)
-    source = 'groq' if complexity == 'simple' else 'external_api'
+    source = 'groq'
 
     cache.setex(key, 3600, response_text)
     cost = calculate_cost(prompt, source)
@@ -145,5 +152,7 @@ async def generate(request: PromptRequest):
     total_response_ms += ms
     sources[source] += 1
     recent_requests.append({'prompt': prompt[:50], 'source': source, 'saved': cost['saved'], 'response_ms': ms})
+    update_user_stats(x_api_key, cost['saved'])
 
     return {'response': response_text, 'cached': False, 'source': source, 'complexity': complexity, 'tokens': cost['tokens'], 'cost_original': cost['cost_original'], 'cost_optimized': cost['cost_optimized'], 'saved': cost['saved'], 'total_saved': round(total_saved, 4)}
+
