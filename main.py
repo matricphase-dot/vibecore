@@ -13,7 +13,7 @@ GROQ_API_KEY = os.getenv('GROQ_API_KEY', '')
 
 app = FastAPI()
 app.add_middleware(CORSMiddleware, allow_origins=['*'], allow_methods=['*'], allow_headers=['*'])
-cache = redis.from_url(REDIS_URL, decode_responses=True, ssl_cert_reqs=None)
+cache = redis.from_url(REDIS_URL, decode_responses=True, ssl_cert_reqs="none")
 
 total_saved = 0.0
 total_requests = 0

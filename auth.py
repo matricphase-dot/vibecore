@@ -5,7 +5,7 @@ import json
 from datetime import datetime
 
 REDIS_URL = os.getenv('REDIS_URL', 'redis://localhost:6379')
-cache = redis.from_url(REDIS_URL, ssl_cert_reqs=None, decode_responses=True)
+cache = redis.from_url(REDIS_URL, ssl_cert_reqs="none", decode_responses=True)
 
 def generate_api_key() -> str:
     return 'vc_live_' + uuid.uuid4().hex[:24]
