@@ -1,5 +1,5 @@
-﻿import os
-import startup
+import os
+# import startup
 from fastapi import FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
@@ -25,7 +25,7 @@ def get_redis():
     global _redis_client
     if _redis_client is None:
         import redis as redis_lib
-        _redis_client = redis_lib.from_url(REDIS_URL, decode_responses=True, ssl_cert_reqs='none')
+        _redis_client = redis_lib.from_url(REDIS_URL, decode_responses=True)
     return _redis_client
 
 class PromptRequest(BaseModel):
@@ -43,7 +43,7 @@ def generate_groq(prompt: str) -> str:
     try:
         res = req.post('https://api.groq.com/openai/v1/chat/completions',
             headers={'Authorization': f'Bearer {GROQ_API_KEY}', 'Content-Type': 'application/json'},
-            json={'model': 'llama3-8b-8192', 'messages': [{'role': 'user', 'content': prompt}], 'max_tokens': 500})
+            json={'model': 'llama-3.3-70b-versatile', 'messages': [{'role': 'user', 'content': prompt}], 'max_tokens': 500})
         return res.json()['choices'][0]['message']['content'].strip()
     except Exception as e:
         print(f'[Groq] Error: {e}')

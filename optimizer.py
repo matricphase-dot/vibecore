@@ -1,8 +1,6 @@
 ﻿import re
-from nltk.corpus import stopwords
 
 MAX_TOKENS = 100
-STOP_WORDS = set(stopwords.words('english'))
 
 def optimize_prompt(prompt: str) -> dict:
     original = prompt
