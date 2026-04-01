@@ -1,20 +1,12 @@
-@app.get('/debug')
-async def debug():
-    try:
-        r = get_redis()
-        r.ping()
-        return {'redis': 'connected', 'url_prefix': REDIS_URL[:15]}
-    except Exception as e:
-        return {'redis': 'failed', 'error': str(e), 'url_prefix': REDIS_URL[:15]}
-
-import os
+﻿from dotenv import load_dotenv
+load_dotenv()
 # import startup
+import os, hashlib, time, requests as req
 from fastapi import FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from datetime import datetime
-import hashlib, time, requests as req
 
 REDIS_URL = os.getenv('REDIS_URL', 'redis://localhost:6379')
 GROQ_API_KEY = os.getenv('GROQ_API_KEY', '')
@@ -27,14 +19,18 @@ total_requests = 0
 total_response_ms = 0
 sources = {'groq': 0, 'exact_cache': 0, 'semantic_cache': 0, 'external_api': 0}
 recent_requests = []
-
 _redis_client = None
 
 def get_redis():
     global _redis_client
     if _redis_client is None:
         import redis as redis_lib
-        _redis_client = redis_lib.from_url(REDIS_URL, decode_responses=True)
+        print(f'[Redis] Connecting to: {REDIS_URL[:20]}...')
+        if REDIS_URL.startswith('rediss'):
+            _redis_client = redis_lib.from_url(REDIS_URL, decode_responses=True, ssl_cert_reqs='none')
+        else:
+            _redis_client = redis_lib.from_url(REDIS_URL, decode_responses=True)
+        print('[Redis] Connected!')
     return _redis_client
 
 class PromptRequest(BaseModel):
@@ -48,14 +44,21 @@ def hash_prompt(prompt: str, api_key: str) -> str:
 
 def generate_groq(prompt: str) -> str:
     if not GROQ_API_KEY:
+        print('[Groq] No API key found!')
         return f'Echo: {prompt}'
     try:
+        print(f'[Groq] Calling with key: {GROQ_API_KEY[:10]}...')
         res = req.post('https://api.groq.com/openai/v1/chat/completions',
             headers={'Authorization': f'Bearer {GROQ_API_KEY}', 'Content-Type': 'application/json'},
             json={'model': 'llama-3.3-70b-versatile', 'messages': [{'role': 'user', 'content': prompt}], 'max_tokens': 500})
-        return res.json()['choices'][0]['message']['content'].strip()
+        print(f'[Groq] Status: {res.status_code}')
+        if res.status_code == 200:
+            return res.json()['choices'][0]['message']['content'].strip()
+        else:
+            print(f'[Groq] Error response: {res.text[:200]}')
+            return f'Echo: {prompt}'
     except Exception as e:
-        print(f'[Groq] Error: {e}')
+        print(f'[Groq] Exception: {e}')
         return f'Echo: {prompt}'
 
 def create_user(email: str) -> dict:
@@ -100,12 +103,24 @@ async def dashboard():
 async def health():
     return {'status': 'ok'}
 
+@app.get('/debug')
+async def debug():
+    try:
+        r = get_redis()
+        r.ping()
+        return {'redis': 'connected', 'url_prefix': REDIS_URL[:20], 'groq_key': GROQ_API_KEY[:10] if GROQ_API_KEY else 'NOT SET'}
+    except Exception as e:
+        return {'redis': 'failed', 'error': str(e), 'url_prefix': REDIS_URL[:20]}
+
 @app.post('/signup')
 async def signup(request: SignupRequest):
     try:
+        print(f'[Signup] Email: {request.email}')
         user = create_user(request.email)
+        print(f'[Signup] Success: {user["api_key"]}')
         return {'message': 'Welcome to VibeCore!', 'email': user['email'], 'api_key': user['api_key'], 'plan': user['plan'], 'limit': user['limit']}
     except Exception as e:
+        print(f'[Signup] ERROR: {str(e)}')
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get('/me')
@@ -136,11 +151,8 @@ async def generate(request: PromptRequest, x_api_key: str = Header(...)):
     user = get_user(x_api_key)
     if not user:
         raise HTTPException(status_code=401, detail='Invalid API key. Get one at https://vibecore-07n6.onrender.com')
-
     if user['total_requests'] >= user['limit']:
-        raise HTTPException(status_code=429, detail=f'Free limit reached. Upgrade at vibecore-07n6.onrender.com')
-
-    print(f'\n[{datetime.now()}] User: {user["email"]} | Prompt: {request.prompt[:40]}')
+        raise HTTPException(status_code=429, detail='Free limit reached.')
 
     from optimizer import optimize_prompt
     from classifier import classify_prompt
