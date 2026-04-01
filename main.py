@@ -1,3 +1,12 @@
+@app.get('/debug')
+async def debug():
+    try:
+        r = get_redis()
+        r.ping()
+        return {'redis': 'connected', 'url_prefix': REDIS_URL[:15]}
+    except Exception as e:
+        return {'redis': 'failed', 'error': str(e), 'url_prefix': REDIS_URL[:15]}
+
 import os
 # import startup
 from fastapi import FastAPI, Header, HTTPException
