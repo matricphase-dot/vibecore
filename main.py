@@ -27,7 +27,7 @@ def get_redis():
         import redis as redis_lib
         print(f'[Redis] Connecting to: {REDIS_URL[:20]}...')
         if REDIS_URL.startswith('rediss'):
-            _redis_client = redis_lib.from_url(REDIS_URL, decode_responses=True, ssl=True, ssl_cert_reqs=None)
+            _redis_client = redis_lib.from_url(REDIS_URL, decode_responses=True)
         else:
             _redis_client = redis_lib.from_url(REDIS_URL, decode_responses=True)
         print('[Redis] Connected!')
