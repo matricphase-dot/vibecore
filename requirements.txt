@@ -8,3 +8,4 @@ requests
 python-jose
 passlib
 python-multipart
+python-dotenv
