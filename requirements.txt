@@ -1,6 +1,6 @@
-﻿fastapi
+fastapi
 uvicorn
-redis
+redis==4.6.0
 sentence-transformers
 numpy
 nltk
