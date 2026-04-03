@@ -21,18 +21,17 @@ button:hover { background:#00dd77; }
 .dashboard { display:none; }
 .grid { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; padding:24px 32px; }
 .card { background:#1a1a1a; border:1px solid #222; border-radius:12px; padding:20px; }
-.card .label { font-size:12px; color:#888; margin-bottom:8px; text-transform:uppercase; letter-spacing:0.5px; }
+.card .label { font-size:12px; color:#888; margin-bottom:8px; text-transform:uppercase; }
 .card .value { font-size:32px; font-weight:700; }
 .card .sub { font-size:12px; color:#555; margin-top:4px; }
 .green { color:#00ff88; }
 .blue { color:#4fa3ff; }
 .purple { color:#b57aff; }
-.orange { color:#ffaa44; }
 .charts { display:grid; grid-template-columns:1fr 1fr; gap:16px; padding:0 32px 24px; }
 .chart-card { background:#1a1a1a; border:1px solid #222; border-radius:12px; padding:20px; }
 .chart-card h3 { font-size:14px; color:#888; margin-bottom:16px; }
 .log { margin:0 32px 32px; background:#1a1a1a; border:1px solid #222; border-radius:12px; padding:20px; }
-.log h3 { font-size:14px; color:#888; margin-bottom:16px; display:flex; justify-content:space-between; }
+.log h3 { font-size:14px; color:#888; margin-bottom:16px; }
 .log-entry { display:flex; gap:12px; padding:10px 0; border-bottom:1px solid #222; font-size:13px; align-items:center; }
 .log-entry:last-child { border-bottom:none; }
 .badge { padding:2px 8px; border-radius:20px; font-size:11px; font-weight:600; white-space:nowrap; }
@@ -44,7 +43,6 @@ button:hover { background:#00dd77; }
 .saved-text { color:#00ff88; white-space:nowrap; font-weight:600; }
 .time-text { color:#555; white-space:nowrap; }
 .status-dot { width:8px; height:8px; border-radius:50%; background:#00ff88; animation:pulse 2s infinite; }
-.plan-badge { background:#00ff8822; color:#00ff88; padding:4px 12px; border-radius:20px; font-size:12px; }
 @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
 </style>
 </head>
@@ -53,18 +51,18 @@ button:hover { background:#00dd77; }
 <header>
   <div style="display:flex;align-items:center;gap:10px">
     <div class="status-dot"></div>
-    <h1>⚡ VibeCore Dashboard</h1>
+    <h1>VibeCore Dashboard</h1>
   </div>
-  <a href="/">← Back to Home</a>
+  <a href="/">Back to Home</a>
 </header>
 
 <div id="login-section">
   <div class="login-box">
     <h2>Enter your API key</h2>
     <p>Paste your VibeCore API key to view your personal dashboard</p>
-    <input type="text" id="api-key-input" placeholder="vc_live_xxxxxxxxxx">
-    <button onclick="loadDashboard()">View Dashboard →</button>
-    <p style="margin-top:16px;font-size:12px;color:#555">Don't have a key? <a href="/" style="color:#00ff88">Get one free →</a></p>
+    <input type="text" id="api-key-input" placeholder="vc_live_xxxxxxxxxx" />
+    <button id="view-btn" onclick="loadDashboard()">View Dashboard</button>
+    <p style="margin-top:16px;font-size:12px;color:#555">No key? <a href="/" style="color:#00ff88">Get one free</a></p>
   </div>
 </div>
 
@@ -104,41 +102,42 @@ button:hover { background:#00dd77; }
   </div>
 
   <div class="log">
-    <h3>
-      <span>LIVE REQUEST LOG</span>
-      <span id="live-badge" style="background:#00ff8822;color:#00ff88;padding:3px 10px;border-radius:20px;font-size:11px">● LIVE</span>
-    </h3>
+    <h3>LIVE REQUEST LOG</h3>
     <div id="log-entries">
-      <div style="color:#555;font-size:13px;padding:8px 0">No requests yet — make your first API call!</div>
+      <div style="color:#555;font-size:13px;padding:8px 0">No requests yet</div>
     </div>
   </div>
 </div>
 
 <script>
-let apiKey = ''
-let sourceChart, savingsChart
-let savingsHistory = []
-let lastRequestCount = 0
+var apiKey = '';
+var sourceChart = null;
+var savingsChart = null;
+var savingsHistory = [];
+var lastCount = 0;
 
 function loadDashboard() {
-  apiKey = document.getElementById('api-key-input').value.trim()
-  if (!apiKey.startsWith('vc_live_')) return alert('Invalid API key format. Should start with vc_live_')
-  document.getElementById('login-section').style.display = 'none'
-  document.getElementById('dashboard').style.display = 'block'
-  initCharts()
-  fetchStats()
-  setInterval(fetchStats, 3000)
+  apiKey = document.getElementById('api-key-input').value.trim();
+  if (!apiKey || apiKey.indexOf('vc_live_') !== 0) {
+    alert('Invalid API key. Should start with vc_live_');
+    return;
+  }
+  document.getElementById('login-section').style.display = 'none';
+  document.getElementById('dashboard').style.display = 'block';
+  initCharts();
+  fetchStats();
+  setInterval(fetchStats, 3000);
 }
 
 function initCharts() {
   sourceChart = new Chart(document.getElementById('sourceChart'), {
     type: 'doughnut',
     data: {
-      labels: ['Groq (Free)', 'Exact Cache', 'Semantic Cache', 'External API'],
+      labels: ['Groq', 'Exact Cache', 'Semantic Cache', 'External API'],
       datasets: [{ data: [0,0,0,0], backgroundColor: ['#4fa3ff','#00ff88','#b57aff','#ffaa44'], borderWidth: 0 }]
     },
     options: { plugins: { legend: { labels: { color: '#888', font: { size: 12 } } } } }
-  })
+  });
 
   savingsChart = new Chart(document.getElementById('savingsChart'), {
     type: 'line',
@@ -153,26 +152,25 @@ function initCharts() {
         y: { ticks: { color: '#555' }, grid: { color: '#222' } }
       }
     }
-  })
+  });
 }
 
-async function fetchStats() {
-  try {
-    const [meRes, statsRes] = await Promise.all([
-      fetch('/me', { headers: { 'x-api-key': apiKey } }),
-      fetch('/stats', { headers: { 'x-api-key': apiKey } })
-    ])
-    const me = await meRes.json()
-    const stats = await statsRes.json()
+function fetchStats() {
+  Promise.all([
+    fetch('/me', { headers: { 'x-api-key': apiKey } }).then(function(r) { return r.json(); }),
+    fetch('/stats', { headers: { 'x-api-key': apiKey } }).then(function(r) { return r.json(); })
+  ]).then(function(results) {
+    var me = results[0];
+    var stats = results[1];
 
-    if (me.detail) { alert('Invalid API key!'); return; }
+    if (me.detail) { return; }
 
-    document.getElementById('total-saved').textContent = 'Rs.' + me.total_saved.toFixed(4)
-    document.getElementById('total-requests').textContent = me.total_requests
-    document.getElementById('requests-remaining').textContent = me.requests_remaining + ' remaining'
-    document.getElementById('plan').textContent = me.plan.charAt(0).toUpperCase() + me.plan.slice(1)
-    document.getElementById('email').textContent = me.email
-    document.getElementById('api-key-display').textContent = me.api_key.slice(0,20) + '...'
+    document.getElementById('total-saved').textContent = 'Rs.' + me.total_saved.toFixed(4);
+    document.getElementById('total-requests').textContent = me.total_requests;
+    document.getElementById('requests-remaining').textContent = me.requests_remaining + ' remaining';
+    document.getElementById('plan').textContent = me.plan;
+    document.getElementById('email').textContent = me.email;
+    document.getElementById('api-key-display').textContent = apiKey.slice(0, 20) + '...';
 
     if (stats.sources) {
       sourceChart.data.datasets[0].data = [
@@ -180,44 +178,52 @@ async function fetchStats() {
         stats.sources.exact_cache || 0,
         stats.sources.semantic_cache || 0,
         stats.sources.external_api || 0
-      ]
-      sourceChart.update()
+      ];
+      sourceChart.update();
     }
 
-    savingsHistory.push(me.total_saved)
-    if (savingsHistory.length > 20) savingsHistory.shift()
-    savingsChart.data.labels = savingsHistory.map((_, i) => i + 1)
-    savingsChart.data.datasets[0].data = savingsHistory
-    savingsChart.update()
+    savingsHistory.push(me.total_saved);
+    if (savingsHistory.length > 20) savingsHistory.shift();
+    savingsChart.data.labels = savingsHistory.map(function(_, i) { return i + 1; });
+    savingsChart.data.datasets[0].data = savingsHistory;
+    savingsChart.update();
 
-    if (stats.recent_requests && stats.recent_requests.length > 0) {
-      if (stats.recent_requests.length !== lastRequestCount) {
-        lastRequestCount = stats.recent_requests.length
-        const logDiv = document.getElementById('log-entries')
-        logDiv.innerHTML = ''
-        const reversed = [...stats.recent_requests].reverse()
-        reversed.forEach(req => {
-          const entry = document.createElement('div')
-          entry.className = 'log-entry'
-          entry.innerHTML = 
-            <span class="badge "></span>
-            <span class="prompt-text"></span>
-            <span class="saved-text">+Rs.</span>
-            <span class="time-text">ms</span>
-          
-          logDiv.appendChild(entry)
-        })
-      }
+    if (stats.recent_requests && stats.recent_requests.length > 0 && stats.recent_requests.length !== lastCount) {
+      lastCount = stats.recent_requests.length;
+      var logDiv = document.getElementById('log-entries');
+      logDiv.innerHTML = '';
+      var reversed = stats.recent_requests.slice().reverse();
+      reversed.forEach(function(req) {
+        var entry = document.createElement('div');
+        entry.className = 'log-entry';
+        var badge = document.createElement('span');
+        badge.className = 'badge ' + req.source;
+        badge.textContent = req.source;
+        var prompt = document.createElement('span');
+        prompt.className = 'prompt-text';
+        prompt.textContent = req.prompt;
+        var saved = document.createElement('span');
+        saved.className = 'saved-text';
+        saved.textContent = '+Rs.' + req.saved;
+        var time = document.createElement('span');
+        time.className = 'time-text';
+        time.textContent = req.response_ms + 'ms';
+        entry.appendChild(badge);
+        entry.appendChild(prompt);
+        entry.appendChild(saved);
+        entry.appendChild(time);
+        logDiv.appendChild(entry);
+      });
     }
-  } catch(e) {
-    console.error('Error fetching stats:', e)
-  }
+  }).catch(function(e) {
+    console.error('Error:', e);
+  });
 }
 
-const urlKey = new URLSearchParams(window.location.search).get('key')
+var urlKey = new URLSearchParams(window.location.search).get('key');
 if (urlKey) {
-  document.getElementById('api-key-input').value = urlKey
-  loadDashboard()
+  document.getElementById('api-key-input').value = urlKey;
+  loadDashboard();
 }
 </script>
 </body>
