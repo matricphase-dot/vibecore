@@ -9,64 +9,90 @@
 body { font-family: system-ui, sans-serif; background:#0f0f0f; color:#fff; }
 nav { padding:20px 40px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #222; }
 nav h1 { font-size:20px; font-weight:700; }
-nav span { font-size:12px; background:#00ff8822; color:#00ff88; padding:4px 12px; border-radius:20px; }
+nav a { color:#00ff88; text-decoration:none; font-size:13px; }
 .hero { text-align:center; padding:80px 20px 60px; }
 .hero h2 { font-size:48px; font-weight:800; line-height:1.2; margin-bottom:20px; }
 .hero h2 span { color:#00ff88; }
 .hero p { font-size:18px; color:#888; max-width:600px; margin:0 auto 40px; }
-.signup-box { background:#1a1a1a; border:1px solid #333; border-radius:16px; padding:32px; max-width:480px; margin:0 auto; }
+.signup-box { background:#1a1a1a; border:1px solid #333; border-radius:16px; padding:32px; max-width:520px; margin:0 auto; }
 .signup-box h3 { font-size:20px; margin-bottom:8px; }
 .signup-box p { color:#888; font-size:14px; margin-bottom:24px; }
 .input-row { display:flex; gap:8px; }
 input[type=email] { flex:1; padding:12px 16px; background:#111; border:1px solid #333; border-radius:8px; color:#fff; font-size:14px; outline:none; }
 input[type=email]:focus { border-color:#00ff88; }
-button { padding:12px 24px; background:#00ff88; color:#000; border:none; border-radius:8px; font-weight:700; cursor:pointer; font-size:14px; white-space:nowrap; }
-button:hover { background:#00dd77; }
-.result { margin-top:20px; background:#111; border:1px solid #222; border-radius:8px; padding:16px; display:none; }
-.result .key { font-family:monospace; color:#00ff88; font-size:13px; word-break:break-all; }
-.result p { color:#888; font-size:12px; margin-top:8px; }
+button.primary { padding:12px 24px; background:#00ff88; color:#000; border:none; border-radius:8px; font-weight:700; cursor:pointer; font-size:14px; white-space:nowrap; }
+button.primary:hover { background:#00dd77; }
+button.copy-btn { padding:8px 16px; background:#333; color:#fff; border:none; border-radius:6px; cursor:pointer; font-size:12px; }
+button.copy-btn:hover { background:#444; }
+.api-key-box { margin-top:20px; background:#0a0a0a; border:1px solid #00ff8844; border-radius:12px; padding:20px; display:none; }
+.api-key-box h4 { color:#00ff88; font-size:14px; margin-bottom:12px; }
+.key-row { display:flex; align-items:center; gap:8px; background:#111; border:1px solid #222; border-radius:8px; padding:12px; margin-bottom:16px; }
+.key-text { flex:1; font-family:monospace; font-size:13px; color:#00ff88; word-break:break-all; }
+.steps-mini { text-align:left; }
+.steps-mini p { font-size:13px; color:#888; margin-bottom:8px; line-height:1.6; }
+.steps-mini code { background:#222; padding:2px 6px; border-radius:4px; color:#4fa3ff; font-size:12px; }
 .features { display:grid; grid-template-columns:repeat(3,1fr); gap:20px; padding:60px 40px; max-width:1000px; margin:0 auto; }
 .feature { background:#1a1a1a; border:1px solid #222; border-radius:12px; padding:24px; }
 .feature .icon { font-size:24px; margin-bottom:12px; }
 .feature h4 { font-size:16px; margin-bottom:8px; }
 .feature p { font-size:13px; color:#888; line-height:1.6; }
-.code-section { padding:40px; max-width:800px; margin:0 auto; }
-.code-section h3 { font-size:24px; margin-bottom:24px; text-align:center; }
-.tabs { display:flex; gap:8px; margin-bottom:16px; }
-.tab { padding:8px 16px; border-radius:6px; cursor:pointer; font-size:13px; background:#1a1a1a; border:1px solid #333; color:#888; }
+.guide { max-width:800px; margin:0 auto; padding:0 40px 80px; }
+.guide h2 { font-size:32px; margin-bottom:40px; text-align:center; }
+.step-card { background:#1a1a1a; border:1px solid #222; border-radius:12px; padding:24px; margin-bottom:16px; display:flex; gap:20px; align-items:flex-start; }
+.step-num { background:#00ff8822; color:#00ff88; border:1px solid #00ff8844; border-radius:50%; width:36px; height:36px; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:14px; flex-shrink:0; }
+.step-content h4 { font-size:16px; margin-bottom:8px; }
+.step-content p { font-size:13px; color:#888; line-height:1.6; margin-bottom:12px; }
+.code-block { background:#0a0a0a; border:1px solid #222; border-radius:8px; padding:16px; font-family:monospace; font-size:12px; line-height:1.8; overflow-x:auto; color:#ccc; }
+.code-block .green { color:#00ff88; }
+.code-block .blue { color:#4fa3ff; }
+.code-block .gray { color:#555; }
+.tabs { display:flex; gap:8px; margin-bottom:12px; }
+.tab { padding:6px 14px; border-radius:6px; cursor:pointer; font-size:12px; background:#1a1a1a; border:1px solid #333; color:#888; }
 .tab.active { background:#00ff8822; border-color:#00ff88; color:#00ff88; }
-.code-block { background:#111; border:1px solid #222; border-radius:12px; padding:24px; font-family:monospace; font-size:13px; line-height:1.8; overflow-x:auto; }
-.code-block .comment { color:#555; }
-.code-block .string { color:#00ff88; }
-.code-block .keyword { color:#4fa3ff; }
-.install-section { text-align:center; padding:60px 20px; background:#111; margin-top:40px; }
-.install-section h3 { font-size:28px; margin-bottom:16px; }
-.install-cmd { display:inline-block; background:#1a1a1a; border:1px solid #333; border-radius:8px; padding:16px 32px; font-family:monospace; font-size:16px; color:#00ff88; margin:16px 0; }
+.response-example { background:#0a0a0a; border:1px solid #222; border-radius:8px; padding:16px; font-family:monospace; font-size:12px; line-height:1.8; color:#ccc; margin-top:12px; }
+.badge { display:inline-block; padding:2px 8px; border-radius:20px; font-size:11px; font-weight:600; margin-right:6px; }
+.badge.green { background:#00ff8822; color:#00ff88; }
+.badge.blue { background:#4fa3ff22; color:#4fa3ff; }
 footer { text-align:center; padding:20px; color:#555; font-size:13px; border-top:1px solid #222; }
+@media(max-width:768px) { .features { grid-template-columns:1fr; } .hero h2 { font-size:32px; } nav { padding:16px 20px; } .guide { padding:0 20px 60px; } }
 </style>
 </head>
 <body>
 
 <nav>
   <h1>⚡ VibeCore</h1>
-  <span>LIVE BETA</span>
+  <div style="display:flex;gap:20px;align-items:center">
+    <a href="/dashboard">Dashboard</a>
+    <a href="#guide">Setup Guide</a>
+  </div>
 </nav>
 
 <div class="hero">
   <h2>Cut your AI API costs<br><span>by up to 80%</span></h2>
-  <p>VibeCore sits between your app and GPT/Claude. It caches, optimizes and routes your prompts automatically.</p>
+  <p>VibeCore sits between your app and GPT/Claude. It caches, optimizes and routes your prompts — automatically saving you money on every request.</p>
 
   <div class="signup-box">
     <h3>Get your free API key</h3>
-    <p>1000 requests free. No credit card needed.</p>
+    <p>1000 requests free · No credit card · Setup in 2 minutes</p>
     <div class="input-row">
       <input type="email" id="email" placeholder="you@example.com">
-      <button onclick="signup()">Get Key →</button>
+      <button class="primary" onclick="signup()">Get Key →</button>
     </div>
-    <div class="result" id="result">
-      <div class="key" id="api-key"></div>
-      <p>Copy this key — you'll need it to use VibeCore</p>
-      <p style="margin-top:12px;color:#00ff88">✅ Your account is ready! See setup instructions below.</p>
+
+    <div class="api-key-box" id="api-key-box">
+      <h4>✅ Your API key is ready!</h4>
+      <div class="key-row">
+        <span class="key-text" id="api-key-text"></span>
+        <button class="copy-btn" onclick="copyKey()">Copy</button>
+      </div>
+      <div class="steps-mini">
+        <p>⚡ <strong>Quick start:</strong></p>
+        <p>1. Copy your API key above</p>
+        <p>2. Install: <code>npm install axios</code></p>
+        <p>3. Call: <code>POST https://vibecore-07n6.onrender.com/generate</code></p>
+        <p>4. Add header: <code>x-api-key: YOUR_KEY</code></p>
+        <p style="margin-top:12px;color:#00ff88">↓ Full setup guide below</p>
+      </div>
     </div>
   </div>
 </div>
@@ -75,82 +101,173 @@ footer { text-align:center; padding:20px; color:#555; font-size:13px; border-top
   <div class="feature">
     <div class="icon">⚡</div>
     <h4>Exact Cache</h4>
-    <p>Repeated prompts return instantly from Redis cache. Zero cost, zero latency.</p>
+    <p>Repeated prompts return instantly from Redis cache. Zero cost, zero latency on duplicate requests.</p>
   </div>
   <div class="feature">
     <div class="icon">🧠</div>
     <h4>Smart Routing</h4>
-    <p>Simple prompts go to free models. Complex ones go to powerful APIs. Automatically.</p>
+    <p>Simple prompts go to free local models. Complex ones route to powerful APIs. All automatic.</p>
   </div>
   <div class="feature">
     <div class="icon">📊</div>
     <h4>Cost Tracking</h4>
-    <p>Every response shows exactly how much you saved vs GPT-4 pricing.</p>
+    <p>Every response shows exactly how much you saved vs GPT-4 pricing. See your total savings grow.</p>
   </div>
 </div>
 
-<div class="code-section">
-  <h3>Integrate in 2 minutes</h3>
-  <div class="tabs">
-    <div class="tab active" onclick="showTab('js')">JavaScript</div>
-    <div class="tab" onclick="showTab('python')">Python</div>
-    <div class="tab" onclick="showTab('curl')">cURL</div>
+<div class="guide" id="guide">
+  <h2>Setup Guide</h2>
+
+  <div class="step-card">
+    <div class="step-num">1</div>
+    <div class="step-content">
+      <h4>Get your API key</h4>
+      <p>Enter your email above and click "Get Key". Your key looks like <code>vc_live_xxxxxxxxxx</code>. Keep it safe — you'll use it in every request.</p>
+    </div>
   </div>
 
-  <div class="code-block" id="tab-js">
-<span class="comment">// Install</span>
-npm install axios
+  <div class="step-card">
+    <div class="step-num">2</div>
+    <div class="step-content">
+      <h4>Install and make your first request</h4>
+      <p>Choose your language and copy the code below. Replace <code>YOUR_API_KEY</code> with your actual key.</p>
+      <div class="tabs">
+        <div class="tab active" onclick="showTab('js', this)">JavaScript</div>
+        <div class="tab" onclick="showTab('python', this)">Python</div>
+        <div class="tab" onclick="showTab('curl', this)">cURL</div>
+      </div>
+      <div id="code-js" class="code-block">
+<span class="gray">// Install first: npm install axios</span>
+<span class="blue">const</span> axios = require(<span class="green">'axios'</span>)
 
-<span class="comment">// Use VibeCore instead of OpenAI</span>
-<span class="keyword">const</span> axios = require(<span class="string">'axios'</span>)
-
-<span class="keyword">const</span> res = <span class="keyword">await</span> axios.post(<span class="string">'https://vibecore-07n6.onrender.com/generate'</span>, {
-  prompt: <span class="string">'What is the capital of France?'</span>
-}, {
-  headers: { <span class="string">'x-api-key'</span>: <span class="string">'YOUR_API_KEY'</span> }
-})
-
-console.log(res.data.response)  <span class="comment">// Paris</span>
-console.log(<span class="string">'Saved: Rs.'</span> + res.data.saved)
-  </div>
-
-  <div class="code-block" id="tab-python" style="display:none">
-<span class="comment"># Use VibeCore instead of OpenAI</span>
-<span class="keyword">import</span> requests
-
-res = requests.post(<span class="string">'https://vibecore-07n6.onrender.com/generate'</span>,
-    json={<span class="string">'prompt'</span>: <span class="string">'What is the capital of France?'</span>},
-    headers={<span class="string">'x-api-key'</span>: <span class="string">'YOUR_API_KEY'</span>}
+<span class="blue">const</span> response = <span class="blue">await</span> axios.post(
+  <span class="green">'https://vibecore-07n6.onrender.com/generate'</span>,
+  { prompt: <span class="green">'What is the capital of France?'</span> },
+  { headers: { <span class="green">'x-api-key'</span>: <span class="green">'YOUR_API_KEY'</span> } }
 )
 
-print(res.json()[<span class="string">'response'</span>])   <span class="comment"># Paris</span>
-print(<span class="string">'Saved:'</span>, res.json()[<span class="string">'saved'</span>])
-  </div>
+console.log(response.data.response)  <span class="gray">// Paris</span>
+console.log(<span class="green">'Saved: Rs.'</span> + response.data.saved)
+      </div>
+      <div id="code-python" class="code-block" style="display:none">
+<span class="gray"># Install first: pip install requests</span>
+<span class="blue">import</span> requests
 
-  <div class="code-block" id="tab-curl" style="display:none">
-<span class="comment"># Test with cURL</span>
+response = requests.post(
+  <span class="green">'https://vibecore-07n6.onrender.com/generate'</span>,
+  json={<span class="green">'prompt'</span>: <span class="green">'What is the capital of France?'</span>},
+  headers={<span class="green">'x-api-key'</span>: <span class="green">'YOUR_API_KEY'</span>}
+)
+
+data = response.json()
+print(data[<span class="green">'response'</span>])  <span class="gray"># Paris</span>
+print(<span class="green">'Saved: Rs.'</span>, data[<span class="green">'saved'</span>])
+      </div>
+      <div id="code-curl" class="code-block" style="display:none">
 curl -X POST https://vibecore-07n6.onrender.com/generate \
-  -H <span class="string">"Content-Type: application/json"</span> \
-  -H <span class="string">"x-api-key: YOUR_API_KEY"</span> \
-  -d <span class="string">'{"prompt": "What is the capital of France?"}'</span>
+  -H <span class="green">"Content-Type: application/json"</span> \
+  -H <span class="green">"x-api-key: YOUR_API_KEY"</span> \
+  -d <span class="green">'{"prompt": "What is the capital of France?"}'</span>
+      </div>
+    </div>
   </div>
-</div>
 
-<div class="install-section">
-  <h3>One command setup</h3>
-  <p style="color:#888;margin-bottom:8px">Install the VibeCore CLI and get started instantly</p>
-  <div class="install-cmd">npx vibecore-cli init</div>
-  <p style="color:#555;font-size:13px;margin-top:16px">Works with Node.js 16+</p>
+  <div class="step-card">
+    <div class="step-num">3</div>
+    <div class="step-content">
+      <h4>Understand the response</h4>
+      <p>Every response from VibeCore includes cost savings data so you can see exactly what you're saving.</p>
+      <div class="response-example">
+{
+  <span class="green">"response"</span>: <span class="green">"Paris is the capital of France."</span>,
+  <span class="green">"cached"</span>: <span class="blue">false</span>,
+  <span class="green">"source"</span>: <span class="green">"groq"</span>,        <span class="gray">// groq | exact_cache | semantic_cache</span>
+  <span class="green">"tokens"</span>: <span class="blue">6</span>,
+  <span class="green">"cost_original"</span>: <span class="blue">0.012</span>,   <span class="gray">// what GPT-4 would cost</span>
+  <span class="green">"cost_optimized"</span>: <span class="blue">0.0</span>,    <span class="gray">// what you paid</span>
+  <span class="green">"saved"</span>: <span class="blue">0.012</span>,          <span class="gray">// money saved this request</span>
+  <span class="green">"total_saved"</span>: <span class="blue">0.024</span>      <span class="gray">// total saved so far</span>
+}
+      </div>
+    </div>
+  </div>
+
+  <div class="step-card">
+    <div class="step-num">4</div>
+    <div class="step-content">
+      <h4>Check your usage and savings</h4>
+      <p>Use the <code>/me</code> endpoint anytime to see your total requests, savings and remaining free quota.</p>
+      <div class="code-block">
+<span class="gray">// JavaScript</span>
+<span class="blue">const</span> stats = <span class="blue">await</span> axios.get(
+  <span class="green">'https://vibecore-07n6.onrender.com/me'</span>,
+  { headers: { <span class="green">'x-api-key'</span>: <span class="green">'YOUR_API_KEY'</span> } }
+)
+console.log(stats.data)
+
+<span class="gray">// Response:</span>
+<span class="gray">// { total_requests: 42, total_saved: 0.84, requests_remaining: 958 }</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="step-card">
+    <div class="step-num">5</div>
+    <div class="step-content">
+      <h4>Replace your existing AI calls</h4>
+      <p>The easiest way to use VibeCore — just replace your existing OpenAI/Claude calls with VibeCore. One line change, instant savings.</p>
+      <div class="code-block">
+<span class="gray">// BEFORE — calling OpenAI directly</span>
+<span class="blue">const</span> res = <span class="blue">await</span> openai.chat.completions.create({
+  model: <span class="green">'gpt-4'</span>,
+  messages: [{ role: <span class="green">'user'</span>, content: prompt }]
+})
+
+<span class="gray">// AFTER — calling VibeCore (saves up to 80%)</span>
+<span class="blue">const</span> res = <span class="blue">await</span> axios.post(
+  <span class="green">'https://vibecore-07n6.onrender.com/generate'</span>,
+  { prompt },
+  { headers: { <span class="green">'x-api-key'</span>: <span class="green">'YOUR_API_KEY'</span> } }
+)
+      </div>
+    </div>
+  </div>
+
+  <div class="step-card">
+    <div class="step-num">6</div>
+    <div class="step-content">
+      <h4>API Reference</h4>
+      <p>All available endpoints:</p>
+      <div class="code-block">
+<span class="green">POST</span> /generate        <span class="gray">— Generate AI response (requires x-api-key)</span>
+<span class="green">GET</span>  /me             <span class="gray">— View your usage stats (requires x-api-key)</span>
+<span class="green">POST</span> /signup         <span class="gray">— Create account (requires email in body)</span>
+<span class="green">GET</span>  /health         <span class="gray">— Check server status</span>
+<span class="green">GET</span>  /dashboard      <span class="gray">— View live dashboard</span>
+
+<span class="gray">Base URL: https://vibecore-07n6.onrender.com</span>
+<span class="gray">Auth: Add header x-api-key: YOUR_API_KEY to every request</span>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <footer>
-  VibeCore — AI Cost Autopilot · Built with ❤️ · <a href="/dashboard" style="color:#00ff88">Dashboard</a>
+  VibeCore — AI Cost Autopilot · Free tier: 1000 requests/month ·
+  <a href="/dashboard" style="color:#00ff88">Dashboard</a> ·
+  <a href="#guide" style="color:#00ff88">Docs</a>
 </footer>
 
 <script>
+let userApiKey = ''
+
 async function signup() {
   const email = document.getElementById('email').value
-  if (!email) return alert('Enter your email!')
+  if (!email || !email.includes('@')) return alert('Enter a valid email!')
+  const btn = document.querySelector('button.primary')
+  btn.textContent = 'Getting key...'
+  btn.disabled = true
   try {
     const res = await fetch('/signup', {
       method: 'POST',
@@ -158,18 +275,30 @@ async function signup() {
       body: JSON.stringify({email})
     })
     const data = await res.json()
-    document.getElementById('api-key').textContent = data.api_key
-    document.getElementById('result').style.display = 'block'
+    userApiKey = data.api_key
+    document.getElementById('api-key-text').textContent = data.api_key
+    document.getElementById('api-key-box').style.display = 'block'
+    btn.textContent = 'Got it! ✅'
+    document.getElementById('api-key-box').scrollIntoView({behavior:'smooth'})
   } catch(e) {
-    alert('Error! Try again.')
+    alert('Error! Please try again.')
+    btn.textContent = 'Get Key →'
+    btn.disabled = false
   }
 }
 
-function showTab(tab) {
+function copyKey() {
+  navigator.clipboard.writeText(userApiKey)
+  const btn = document.querySelector('.copy-btn')
+  btn.textContent = 'Copied!'
+  setTimeout(() => btn.textContent = 'Copy', 2000)
+}
+
+function showTab(tab, el) {
+  document.querySelectorAll('[id^=code-]').forEach(t => t.style.display = 'none')
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'))
-  document.querySelectorAll('[id^=tab-]').forEach(t => t.style.display = 'none')
-  document.getElementById('tab-' + tab).style.display = 'block'
-  event.target.classList.add('active')
+  document.getElementById('code-' + tab).style.display = 'block'
+  el.classList.add('active')
 }
 </script>
 </body>
