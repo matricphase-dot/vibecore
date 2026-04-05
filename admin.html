@@ -1,0 +1,205 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VibeCore Admin</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family: system-ui, sans-serif; background:#0f0f0f; color:#fff; min-height:100vh; }
+header { padding:20px 32px; border-bottom:1px solid #222; display:flex; align-items:center; justify-content:space-between; }
+header h1 { font-size:18px; font-weight:700; color:#ff4444; }
+.login-box { max-width:400px; margin:80px auto; background:#1a1a1a; border:1px solid #222; border-radius:16px; padding:32px; text-align:center; }
+.login-box h2 { font-size:20px; margin-bottom:8px; }
+.login-box p { color:#888; font-size:14px; margin-bottom:24px; }
+input { width:100%; padding:12px 16px; background:#111; border:1px solid #333; border-radius:8px; color:#fff; font-size:14px; outline:none; margin-bottom:12px; }
+input:focus { border-color:#ff4444; }
+button.primary { width:100%; padding:12px; background:#ff4444; color:#fff; border:none; border-radius:8px; font-weight:700; cursor:pointer; font-size:14px; }
+.admin-panel { display:none; padding:24px 32px; }
+.stats-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:24px; }
+.stat-card { background:#1a1a1a; border:1px solid #222; border-radius:12px; padding:20px; }
+.stat-card .label { font-size:12px; color:#888; margin-bottom:8px; text-transform:uppercase; }
+.stat-card .value { font-size:32px; font-weight:700; }
+.red { color:#ff4444; }
+.green { color:#00ff88; }
+.blue { color:#4fa3ff; }
+.yellow { color:#ffaa44; }
+.section { background:#1a1a1a; border:1px solid #222; border-radius:12px; padding:24px; margin-bottom:20px; }
+.section h2 { font-size:16px; margin-bottom:16px; color:#888; }
+table { width:100%; border-collapse:collapse; }
+th { text-align:left; padding:10px; font-size:12px; color:#888; text-transform:uppercase; border-bottom:1px solid #222; }
+td { padding:12px 10px; font-size:13px; border-bottom:1px solid #111; }
+tr:hover td { background:#222; }
+.badge { padding:2px 8px; border-radius:20px; font-size:11px; font-weight:600; }
+.badge.free { background:#33333388; color:#888; }
+.badge.pro { background:#ffaa4422; color:#ffaa44; }
+.action-btn { padding:4px 12px; border-radius:6px; border:none; cursor:pointer; font-size:12px; margin-right:4px; }
+.upgrade-btn { background:#ffaa4422; color:#ffaa44; border:1px solid #ffaa4444; }
+.delete-btn { background:#ff444422; color:#ff4444; border:1px solid #ff444444; }
+.search-row { display:flex; gap:8px; margin-bottom:16px; }
+.search-row input { margin:0; flex:1; }
+.search-row button { padding:12px 20px; background:#333; color:#fff; border:none; border-radius:8px; cursor:pointer; white-space:nowrap; }
+.refresh-btn { padding:8px 16px; background:#333; color:#fff; border:none; border-radius:8px; cursor:pointer; font-size:13px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>VibeCore Admin Panel</h1>
+  <span id="admin-status" style="font-size:13px;color:#888"></span>
+</header>
+
+<div id="login-section">
+  <div class="login-box">
+    <h2>Admin Login</h2>
+    <p>Enter your admin key to access the panel</p>
+    <input type="password" id="admin-key-input" placeholder="Admin key..." />
+    <button class="primary" onclick="adminLogin()">Login</button>
+  </div>
+</div>
+
+<div class="admin-panel" id="admin-panel">
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="label">Total Users</div>
+      <div class="value blue" id="total-users">0</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Total Requests</div>
+      <div class="value green" id="total-requests">0</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Total Saved</div>
+      <div class="value yellow" id="total-saved">Rs.0</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Pro Users</div>
+      <div class="value red" id="pro-users">0</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>USER MANAGEMENT <button class="refresh-btn" onclick="loadUsers()" style="float:right">Refresh</button></h2>
+    <div class="search-row">
+      <input type="text" id="search-input" placeholder="Search by email..." oninput="filterUsers()">
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Email</th>
+          <th>API Key</th>
+          <th>Plan</th>
+          <th>Requests</th>
+          <th>Saved</th>
+          <th>Remaining</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="users-table"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+var adminKey = '';
+var allUsers = [];
+
+function adminLogin() {
+  adminKey = document.getElementById('admin-key-input').value.trim();
+  if (!adminKey) return alert('Enter admin key');
+  loadStats();
+  loadUsers();
+}
+
+function loadStats() {
+  fetch('/admin/stats', { headers: { 'x-admin-key': adminKey } })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.detail) { alert('Invalid admin key!'); return; }
+      document.getElementById('login-section').style.display = 'none';
+      document.getElementById('admin-panel').style.display = 'block';
+      document.getElementById('admin-status').textContent = 'Logged in as Admin';
+      document.getElementById('total-users').textContent = data.total_users;
+      document.getElementById('total-requests').textContent = data.total_requests;
+      document.getElementById('total-saved').textContent = 'Rs.' + data.total_saved;
+      document.getElementById('pro-users').textContent = data.pro_users;
+    })
+    .catch(function(e) { alert('Error: ' + e.message); });
+}
+
+function loadUsers() {
+  fetch('/admin/users', { headers: { 'x-admin-key': adminKey } })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.detail) return;
+      allUsers = data.users;
+      renderUsers(allUsers);
+    });
+}
+
+function renderUsers(users) {
+  var tbody = document.getElementById('users-table');
+  tbody.innerHTML = '';
+  if (users.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" style="color:#555;text-align:center;padding:20px">No users yet</td></tr>';
+    return;
+  }
+  users.forEach(function(user) {
+    var tr = document.createElement('tr');
+    tr.innerHTML =
+      '<td>' + user.email + '</td>' +
+      '<td style="font-family:monospace;font-size:11px;color:#888">' + user.api_key.slice(0,20) + '...</td>' +
+      '<td><span class="badge ' + user.plan + '">' + user.plan + '</span></td>' +
+      '<td>' + user.total_requests + '</td>' +
+      '<td style="color:#00ff88">Rs.' + user.total_saved + '</td>' +
+      '<td>' + (user.limit - user.total_requests) + '</td>' +
+      '<td>' +
+        '<button class="action-btn upgrade-btn" onclick="upgradeUser(\'' + user.email + '\')">Upgrade</button>' +
+        '<button class="action-btn delete-btn" onclick="deleteUser(\'' + user.email + '\')">Delete</button>' +
+      '</td>';
+    tbody.appendChild(tr);
+  });
+}
+
+function filterUsers() {
+  var search = document.getElementById('search-input').value.toLowerCase();
+  var filtered = allUsers.filter(function(u) {
+    return u.email.toLowerCase().indexOf(search) !== -1;
+  });
+  renderUsers(filtered);
+}
+
+function upgradeUser(email) {
+  if (!confirm('Upgrade ' + email + ' to Pro (10000 requests)?')) return;
+  fetch('/admin/upgrade?email=' + encodeURIComponent(email) + '&limit=10000', {
+    method: 'POST',
+    headers: { 'x-admin-key': adminKey }
+  })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      alert(data.message);
+      loadUsers();
+      loadStats();
+    });
+}
+
+function deleteUser(email) {
+  if (!confirm('Delete user ' + email + '? This cannot be undone!')) return;
+  fetch('/admin/user?email=' + encodeURIComponent(email), {
+    method: 'DELETE',
+    headers: { 'x-admin-key': adminKey }
+  })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      alert(data.message);
+      loadUsers();
+      loadStats();
+    });
+}
+
+setInterval(function() {
+  if (adminKey) { loadStats(); loadUsers(); }
+}, 30000);
+</script>
+</body>
+</html>

@@ -99,6 +99,10 @@ async def landing():
 async def dashboard():
     return FileResponse('dashboard.html')
 
+@app.get('/admin')
+async def admin():
+    return FileResponse('admin.html')
+
 @app.get('/health')
 async def health():
     return {'status': 'ok'}
@@ -190,3 +194,76 @@ async def generate(request: PromptRequest, x_api_key: str = Header(...)):
     update_user_stats(x_api_key, cost['saved'])
 
     return {'response': response_text, 'cached': False, 'source': source, 'complexity': complexity, 'tokens': cost['tokens'], 'cost_original': cost['cost_original'], 'cost_optimized': cost['cost_optimized'], 'saved': cost['saved'], 'total_saved': round(total_saved, 4)}
+
+ADMIN_KEY = os.getenv('ADMIN_KEY', 'admin_vibecore_secret_2024')
+
+@app.get('/admin/users')
+async def admin_users(x_admin_key: str = Header(...)):
+    if x_admin_key != ADMIN_KEY:
+        raise HTTPException(status_code=401, detail='Invalid admin key')
+    import json
+    cache = get_redis()
+    keys = cache.keys('user:*')
+    users = []
+    for key in keys:
+        data = cache.get(key)
+        if data:
+            users.append(json.loads(data))
+    users.sort(key=lambda x: x.get('total_requests', 0), reverse=True)
+    return {
+        'total_users': len(users),
+        'users': users
+    }
+
+@app.delete('/admin/user')
+async def admin_delete_user(email: str, x_admin_key: str = Header(...)):
+    if x_admin_key != ADMIN_KEY:
+        raise HTTPException(status_code=401, detail='Invalid admin key')
+    import json
+    cache = get_redis()
+    email_data = cache.get(f'email:{email}')
+    if not email_data:
+        raise HTTPException(status_code=404, detail='User not found')
+    user = json.loads(email_data)
+    cache.delete(f'user:{user["api_key"]}')
+    cache.delete(f'email:{email}')
+    return {'message': f'User {email} deleted successfully'}
+
+@app.post('/admin/upgrade')
+async def admin_upgrade_user(email: str, limit: int = 10000, x_admin_key: str = Header(...)):
+    if x_admin_key != ADMIN_KEY:
+        raise HTTPException(status_code=401, detail='Invalid admin key')
+    import json
+    cache = get_redis()
+    email_data = cache.get(f'email:{email}')
+    if not email_data:
+        raise HTTPException(status_code=404, detail='User not found')
+    user = json.loads(email_data)
+    user['plan'] = 'pro'
+    user['limit'] = limit
+    cache.set(f'user:{user["api_key"]}', json.dumps(user))
+    cache.set(f'email:{email}', json.dumps(user))
+    return {'message': f'User {email} upgraded to pro with {limit} requests'}
+
+@app.get('/admin/stats')
+async def admin_stats(x_admin_key: str = Header(...)):
+    if x_admin_key != ADMIN_KEY:
+        raise HTTPException(status_code=401, detail='Invalid admin key')
+    import json
+    cache = get_redis()
+    keys = cache.keys('user:*')
+    users = []
+    for key in keys:
+        data = cache.get(key)
+        if data:
+            users.append(json.loads(data))
+    total_requests = sum(u.get('total_requests', 0) for u in users)
+    total_saved = sum(u.get('total_saved', 0.0) for u in users)
+    pro_users = len([u for u in users if u.get('plan') == 'pro'])
+    return {
+        'total_users': len(users),
+        'total_requests': total_requests,
+        'total_saved': round(total_saved, 4),
+        'free_users': len(users) - pro_users,
+        'pro_users': pro_users
+    }
